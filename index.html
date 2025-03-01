@@ -33,7 +33,7 @@
             display: block;
             margin-top: 10px;
         }
-        input {
+        input, select, textarea {
             width: 100%;
             padding: 10px;
             margin: 5px 0;
@@ -75,8 +75,20 @@
         }
     </style>
     <script>
-        function fetchNutrition() {
-            let foodItem = document.getElementById("food").value;
+        function getNutritionInfo() {
+            let foodItem = document.getElementById("foodItem").value.trim();
+            let ingredients = document.getElementById("recipeIngredients").value.trim().split("\n").filter(i => i);
+
+            let requestData = {};
+            if (foodItem) {
+                requestData.food_item = foodItem;
+            } else if (ingredients.length > 0) {
+                requestData.ingredients = ingredients;
+            } else {
+                alert("Please enter either a food item or a recipe.");
+                return;
+            }
+
             let loading = document.getElementById("loadingNutrition");
             let result = document.getElementById("nutritionResult");
             
@@ -86,7 +98,7 @@
             fetch("/get-nutrition", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ "food_item": foodItem })
+                body: JSON.stringify(requestData)
             })
             .then(response => response.json())
             .then(data => {
@@ -106,7 +118,8 @@
                 health_conditions: document.getElementById("health_conditions").value,
                 allergies: document.getElementById("allergies").value,
                 nutrient_deficiencies: document.getElementById("nutrient_deficiencies").value,
-                activity_level: document.getElementById("activity_level").value
+                activity_level: document.getElementById("activity_level").value,
+                food_category: document.getElementById("foodCategory").value
             };
 
             let loading = document.getElementById("loadingMealPlan");
@@ -136,17 +149,31 @@
     <div class="container">
         <h1>Nutrition Info & Meal Plan</h1>
 
+        <!-- Nutrition Info Section -->
         <div class="section">
             <h2>Get Nutrition Information</h2>
-            <label for="food">Food Name:</label>
-            <input type="text" id="food" placeholder="Enter food name">
-            <button onclick="fetchNutrition()">Get Nutrition</button>
+            <label for="foodItem">Enter a Food Item:</label>
+            <input type="text" id="foodItem" placeholder="e.g., Apple, Chicken Breast">
+
+            <label for="recipeIngredients">OR Enter a Recipe (One ingredient per line):</label>
+            <textarea id="recipeIngredients" rows="5" placeholder="e.g., \n1 cup rice\n100g chicken\n1 tbsp olive oil"></textarea>
+
+            <button onclick="getNutritionInfo()">Get Nutrition Info</button>
             <p id="loadingNutrition" class="loading">Loading...</p>
             <p id="nutritionResult"></p>
         </div>
 
+        <!-- Meal Plan Section -->
         <div class="section">
-            <h2>Generate Personalized Meal Plan</h2>
+            <h2>Generate Personalized Weekly Meal Plan</h2>
+            <label for="foodCategory">Select Your Food Category:</label>
+            <select id="foodCategory">
+                <option value="vegetarian">Vegetarian</option>
+                <option value="non-vegetarian">Non-Vegetarian</option>
+                <option value="eggetarian">Eggetarian</option>
+                <option value="vegan">Vegan</option>
+            </select>
+            
             <label for="age">Age:</label>
             <input type="text" id="age" placeholder="Enter your age">
             
@@ -165,7 +192,7 @@
             <label for="activity_level">Activity Level:</label>
             <input type="text" id="activity_level" placeholder="Activity Level (Low/Moderate/High)">
             
-            <button onclick="generateMealPlan()">Generate Meal Plan</button>
+            <button onclick="generateMealPlan()">Generate Weekly Meal Plan</button>
             <p id="loadingMealPlan" class="loading">Loading...</p>
             <p id="mealPlanResult"></p>
         </div>
