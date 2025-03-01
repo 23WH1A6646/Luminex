@@ -13,23 +13,36 @@ def home():
 @app.route('/get-nutrition', methods=['POST'])
 def get_nutrition():
     data = request.json
-    food_item = data.get("food_item", "")
+    food_item = data.get("food_item", "").strip()
+    ingredients = data.get("ingredients", [])  # If a recipe is provided
 
-    if not food_item:
-        return jsonify({"error": "Food item is required"}), 400
-
-    prompt = f"Provide detailed nutritional information about {food_item}. Include macronutrients (protein, fat, carbohydrates), micronutrients (vitamins, minerals), and calorie content."
+    if not food_item and not ingredients:
+        return jsonify({"error": "Please provide either a food item or a recipe (list of ingredients)."}), 400
 
     try:
         model = genai.GenerativeModel("gemini-1.5-flash")
+
+        if food_item:  
+            # If user provides a single food item
+            prompt = f"Provide detailed nutritional information about {food_item}. Include macronutrients (protein, fat, carbohydrates), micronutrients (vitamins, minerals), and calorie content."
+        else:  
+            # If user provides a recipe (list of ingredients)
+            prompt = f"""
+            Calculate the total nutrition for this recipe, summing up the nutrients of each ingredient:
+            {', '.join(ingredients)}
+            Include total calories, macronutrients (protein, fats, carbohydrates), and key micronutrients.
+            """
+
         response = model.generate_content(prompt)
         return jsonify({"nutrition": response.text})
+    
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 @app.route('/generate-meal-plan', methods=['POST'])
 def generate_meal_plan():
     data = request.json
+    food_category = data.get('food_category', 'vegetarian')  # Default to vegetarian
 
     user_input = f"""
     Generate a 7-day meal plan for a person with the following details:
@@ -39,6 +52,7 @@ def generate_meal_plan():
     - Food allergies: {data.get('allergies', 'None')}
     - Nutrient deficiencies: {data.get('nutrient_deficiencies', 'None')}
     - Activity level: {data.get('activity_level', 'Moderate')}
+    - Food category: {food_category} (Ensure all meals align with this preference)
 
     Each day's meal plan should include:
     - Breakfast
